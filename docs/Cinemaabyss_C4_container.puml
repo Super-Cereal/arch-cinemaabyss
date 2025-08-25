@@ -1,0 +1,71 @@
+@startuml Cinemaabyss_C4_container
+title Cinemaabyss Container Diagram
+
+top to bottom direction
+
+!include <C4/C4_Container>
+
+Person(User, "Пользователь", "Пользователь стриминговой платформы")
+
+System(Warmhouse, "Система Cinemaabyss", "Система стриминговой платформы")
+
+Container_Boundary(Warmhouse, "") {
+    Container(WebApp, "Веб приложение", "React, Typescript", "Предоставляет пользователю интерфейс системы")
+    Container(MobileApp, "Мобильное приложение", "", "Предоставляет пользователю интерфейс системы")
+    Container(TVApp, "Smart TV приложение", "", "Предоставляет пользователю интерфейс системы")
+    Rel(User, WebApp, "Пользуется платформой")
+    Rel(User, MobileApp, "Пользуется платформой")
+    Rel(User, TVApp, "Пользуется платформой")
+
+    Container(Gateway, "Api Gateway", "Kong Gateway", "Высокопроизводительный сервис для проверки авторизации, кеширования, rate limiting")
+    Rel(WebApp, Gateway, "Делает запросы", "REST")
+    Rel(MobileApp, Gateway, "Делает запросы", "REST")
+    Rel(TVApp, Gateway, "Делает запросы", "REST")
+
+    Container(BFFWeb, "BFF web", "NodeJS, Typescript", "Агрегирует данные из микросервисов, предоставляет данные в зависимости от авторизации")
+    Container(BFFMobile, "BFF mobile", "Java", "Агрегирует данные из микросервисов, предоставляет данные в зависимости от авторизации")
+    Container(BFFTV, "BFF TV", "Java", "Агрегирует данные из микросервисов, предоставляет данные в зависимости от авторизации")
+    Rel(Gateway, BFFWeb, "Отправляет запросы с хедерами авторизации", "REST")
+    Rel(Gateway, BFFMobile, "Отправляет запросы с хедерами авторизации", "REST")
+    Rel(Gateway, BFFTV, "Отправляет запросы с хедерами авторизации", "REST")
+
+    Container(AuthService, "Микросервис авторизации", "Go", "Позволяет авторизоваться в системе")
+    ContainerDb(AuthDatabase, "AuthDatabase", "PostgreSQL", "Хранит пользователя")
+    Rel(AuthService, AuthDatabase, "")
+    Rel(Gateway, AuthService, "Авторизует пользователя", "REST")
+
+    Container(PaymentService, "Микросервис платежей", "Go", "Позволяет провести оплату через сторонний сервис")
+    ContainerDb(PaymentDatabase, "PaymentDatabase", "PostgreSQL", "Хранит историю платежей и транзакции")
+    Rel(PaymentService, PaymentDatabase, "")
+
+    Container(SubscribeService, "Микросервис подписок и спецпредложений", "Go", "Работает с подписками и спецпредложениями")
+    ContainerDb(SubscribeDatabase, "SubscribeDatabase", "PostgreSQL", "Хранит подписки и спецпредложения")
+    Rel(SubscribeService, SubscribeDatabase, "")
+    Rel(SubscribeService, PaymentService, "Использует для оплаты какой-либо подписки", "REST")
+    Rel(BFFMobile, SubscribeService, "Узнает информацию о текущей подписке пользователя, получает информацию о возможных подписках и скидках", "REST")
+
+    Container(CinemaService, "Микросервис фильмов", "Go", "Работает с фильмами и основными данными о нем (название, описание)")
+    ContainerDb(CinemaDatabase, "CinemaDatabase", "PostgreSQL", "Хранит ссылки на фильмы и основные данные о нем")
+    Rel(CinemaService, CinemaDatabase, "")
+    Rel(BFFMobile, CinemaService, "Получает список фильмов", "REST")
+
+    Container(MetadataService, "Микросервис метаданных о фильмах", "Go", "Работает с мета-данными о фильмах, оценками и избранным")
+    ContainerDb(MetadataDatabase, "MetadataDatabase", "PostgreSQL", "Хранит мета-данные о фильмах (оценки, избранные, актеры, жанры)")
+    Rel(MetadataService, MetadataDatabase, "")
+    Rel(BFFMobile, MetadataService, "Получает избранные, оценки и мета-данные о фильме", "REST")
+
+    Container(ReccomendationService, "Микросервис рекомендаций", "Go", "На основе данных о фильме и предпочтений пользователя, предлагает фильмы-рекомендации")
+    Rel(ReccomendationService, MetadataService, "Получает мета-данные фильмов и предпочтения пользователя", "REST")
+    Rel(BFFMobile, ReccomendationService, "Получает рекомендации", "REST")
+}
+
+System_Ext(OutPaymentService, "Внешние платежные системы", "Всевозможные платежные системы")
+Rel(PaymentService, OutPaymentService, "Использует для проведения транзакций", "REST")
+
+System_Ext(OutReccomendationService, "Внешняя рекомендательная система", "Систсема рекомендаций")
+Rel(ReccomendationService, OutReccomendationService, "Использует для генерации рекомендаций", "REST")
+
+System_Ext(OutCinemaService, "Внешний онлайн-кинотеатр", "Один из возможных онлайн-кинотеатров")
+Rel(CinemaService, OutCinemaService, "Получает фильмы")
+
+@enduml
