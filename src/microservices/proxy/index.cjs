@@ -1,13 +1,20 @@
+"use strict";
+
 const fastify = require("fastify")({ logger: true });
-const { config } = require("./config");
+const { config } = require("./config.js");
+
+fastify.register(require("@fastify/reply-from"));
 
 fastify.all("/*", async (request, reply) => {
   const randomPercent = Math.random() * 100;
 
-  let fullUrl = config.MOVIES_SERVICE_URL + request.url;
+  let fullUrl = config.MONOLITH_URL + request.url;
 
-  if (request.url.startsWith("/api/movies") && randomPercent > config.MOVIES_MIGRATION_PERCENT) {
-    host = config.MOVIES_SERVICE_URL + request.url;
+  if (
+    request.url.startsWith("/api/movies") &&
+    randomPercent < config.MOVIES_MIGRATION_PERCENT
+  ) {
+    fullUrl = config.MOVIES_SERVICE_URL + request.url;
   }
 
   fastify.log.info(`Proxying request ${request.url} to ${fullUrl}`);
