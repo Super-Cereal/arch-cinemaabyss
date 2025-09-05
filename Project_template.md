@@ -363,9 +363,18 @@ minikube tunnel
 https://cinemaabyss.example.com/api/movies
 и приложите скриншот развертывания helm и вывода https://cinemaabyss.example.com/api/movies
 
+![](./attaches/Screenshot_3.png)
+![](./attaches/Screenshot_4.png)
+
 ## Удаляем все
 
 ```bash
+helm -n cinemaabyss uninstall cinemaabyss
+kubectl -n cinemaabyss get all
+```
+
+Или
+```
 kubectl delete all --all -n cinemaabyss
 kubectl delete namespace cinemaabyss
 ```
